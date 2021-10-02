@@ -1,3 +1,5 @@
+package org.mac.swe.trafikskyltar.model;
+
 import java.util.ArrayList;
 import java.util.List;
 

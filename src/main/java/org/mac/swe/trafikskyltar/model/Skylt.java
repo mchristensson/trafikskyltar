@@ -1,7 +1,9 @@
+package org.mac.swe.trafikskyltar.model;
+
 import java.util.ArrayList;
 import java.util.List;
 
-class Skylt  {
+public class Skylt {
 
     private String href;
     private String label;
@@ -53,7 +55,7 @@ class Skylt  {
 
     @Override
     public String toString() {
-        return "Skylt{" +
+        return "org.mac.swe.trafikskyltar.model.Skylt{" +
                 "href='" + href + '\'' +
                 ", label='" + label + '\'' +
                 ", beskrivning='" + beskrivning + '\'' +
