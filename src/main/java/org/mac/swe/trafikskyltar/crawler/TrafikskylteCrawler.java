@@ -1,18 +1,16 @@
 package org.mac.swe.trafikskyltar.crawler;
 
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.mac.swe.trafikskyltar.model.Skylt;
 import org.mac.swe.trafikskyltar.model.SkyltGrupp;
 import org.mac.swe.trafikskyltar.outputhandler.CrawlDataOutputHandler;
 import org.mac.swe.trafikskyltar.outputhandler.SkyltGruppOutputHandler;
-import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.By;
-
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
-
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

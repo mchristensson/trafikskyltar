@@ -1,18 +1,20 @@
 package org.mac.swe.trafikskyltar;
 
+import org.mac.swe.trafikskyltar.crawler.FileSupportedCrawler;
 import org.mac.swe.trafikskyltar.crawler.HttpClientSupportedCrawler;
 import org.mac.swe.trafikskyltar.crawler.VagmarkesforordningCrawler;
+import org.mac.swe.trafikskyltar.crawler.VagtrafikdefinitionerCrawler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AppB {
+public class AppC {
 
-    private static final Logger logger = LoggerFactory.getLogger(AppB.class);
+    private static final Logger logger = LoggerFactory.getLogger(AppC.class);
 
     public static void main(String[] args) {
         logger.debug("Begin execution...");
 
-        HttpClientSupportedCrawler crawler = new VagmarkesforordningCrawler();
+        FileSupportedCrawler crawler = new VagtrafikdefinitionerCrawler();
         try {
             crawler.init();
             crawler.crawl();

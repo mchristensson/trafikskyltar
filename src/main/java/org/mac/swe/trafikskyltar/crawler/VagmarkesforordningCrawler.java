@@ -2,15 +2,19 @@ package org.mac.swe.trafikskyltar.crawler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import io.github.bonigarcia.wdm.WebDriverManager;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
+import org.apache.commons.text.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -18,43 +22,36 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@Deprecated
-public class VagmarkesforordningCrawler implements WebDriverSupportedCrawler {
+public class VagmarkesforordningCrawler implements HttpClientSupportedCrawler {
 
     private static final Logger logger = LoggerFactory.getLogger(TrafikskylteCrawler.class);
 
-    private WebDriver webDriver;
     private final String basUrl = "https://rkrattsbaser.gov.se/sfst?bet=2007:90";
     private List<Sektion> paragrafer;
+    private HttpClientInvoker httpClientInvoker;
 
     @Override
     public void init() {
-        logger.debug("Initializing chrome webdriver for selenium...");
-        WebDriverManager.chromedriver().setup();
-        ChromeOptions options = new ChromeOptions();
-        options.setHeadless(true);
-        this.webDriver = new ChromeDriver(options);
-        logger.debug("Webdriver initialization complete.");
+        logger.debug("Initializing...");
+        this.httpClientInvoker = new HttpClientInvoker();
+        logger.debug("Initialization complete.");
     }
 
     @Override
     public void shutdown() {
-        if (this.webDriver != null) {
-            logger.debug("Shutting down webdriver...");
-            webDriver.quit();
-            logger.debug("Webdriver was shut-down.");
-        }
+        logger.debug("Shutting down webdriver...");
+        logger.debug("Shut-down complete.");
     }
 
     @Override
     public void crawl() throws Exception {
         logger.info("Requesting base web-page...");
-        this.webDriver.get(basUrl);
 
-        logger.info("Hittar skyltar i grupp...");
+        logger.info("Hämtar och Tolkar text...");
         this.paragrafer = hittaStycke();
 
         logger.info("Klar.");
@@ -75,13 +72,45 @@ public class VagmarkesforordningCrawler implements WebDriverSupportedCrawler {
 
     }
 
-    private final Predicate<String> isAnyFirstFiveSections = s -> s.substring(0, 2).matches("[1234]\\s");
+    private final Function<String, Node> nodeResolver = data -> {
+        String unescaped = StringEscapeUtils.unescapeHtml4(data);
+
+        int bodyStart = unescaped.indexOf("<body>");
+        int bodyEnd = unescaped.indexOf("</body>") + 7;
+
+        unescaped = unescaped.substring(bodyStart, bodyEnd);
+
+
+        // Instantiate the Factory
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+
+        dbf.setNamespaceAware(true);
+        logger.info(unescaped);
+
+        try {
+            // parse XML
+            DocumentBuilder builder = dbf.newDocumentBuilder();
+            InputSource is = new InputSource(new StringReader(unescaped));
+            Document doc = builder.parse(is);
+            XPath xPath = XPathFactory.newInstance().newXPath();
+            String expression = "/body/div/div[3]/div/div[2]/div/div[2]/div[2]/div[8]/div";
+            NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(doc, XPathConstants.NODESET);
+            logger.info("Antal noder: {}", nodeList.getLength());
+            Node node = nodeList.item(0);
+
+            return node;
+        } catch (Exception e) {
+            logger.error("Kunde inte läsa datat", e);
+            throw new RuntimeException(e);
+        }
+    };
 
     private List<Sektion> hittaStycke() throws Exception {
         Thread.sleep(300);
-        WebElement element = this.webDriver.findElement(By.xpath("/html/body/div/div[3]/div/div[2]/div/div[2]/div[2]/div[8]/div"));
+        //WebElement element = this.webDriver.findElement(By.xpath("/html/body/div/div[3]/div/div[2]/div/div[2]/div[2]/div[8]/div"));
+        Node element = this.httpClientInvoker.get(basUrl, this.nodeResolver);
         if (element != null) {
-            String text = element.getText();
+            String text = element.getFirstChild().getNodeValue();
             logger.info("Text lästes ok.");
             String kapitelText = hittaKapitelText(text);
             logger.info("Kapitel lästes ok.");
@@ -93,6 +122,10 @@ public class VagmarkesforordningCrawler implements WebDriverSupportedCrawler {
             throw new Exception("Kunde inte läsa sidan");
         }
     }
+
+
+    private final Predicate<String> isAnyFirstFiveSections = s -> s.substring(0, 2).matches("[1234]\\s");
+
 
     private Sektion skapaSektion(String s) {
         Sektion sektion = new Sektion();
@@ -118,30 +151,26 @@ public class VagmarkesforordningCrawler implements WebDriverSupportedCrawler {
             while (line != null) {
                 line = reader.readLine();
                 if (line == null) {
-                    logger.warn("line is null");
+                    logger.trace("line is null");
                     continue;
                 }
-                if (line.startsWith("E22")) {
-                    logger.info("hello");
-                }
                 if (line.length() == 0) {
-                    //Tom rad, ny ROW kommer
                     continue;
                 } else if (!line.substring(0, 1).isBlank()) {
                     if (line.matches("\\w\\d*\\s.*")) {
-                        //New försekrift
                         foreskriftList.add(current);
                         current = new Foreskrift();
                     }
 
                 }
+
                 //Continue on existing
                 String[] tryTabSplit = line.split("[\\t]");
                 String a;
                 String b;
-                if (tryTabSplit.length == 2) {
+                if (tryTabSplit.length > 1) {
                     a = tryTabSplit[0].trim();
-                    b = tryTabSplit[1].trim();
+                    b = tryTabSplit[tryTabSplit.length - 1].trim();
                 } else if (line.length() > 31) {
                     a = line.substring(0, 32);
                     b = line.substring(32);

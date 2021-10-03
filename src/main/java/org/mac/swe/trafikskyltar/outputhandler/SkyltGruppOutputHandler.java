@@ -24,13 +24,8 @@ public class SkyltGruppOutputHandler implements CrawlDataOutputHandler<SkyltGrup
     @Override
     public void writeOutput(SkyltGrupp skyltGrupp) throws IOException {
         Path targetDomainDir = Paths.get(this.getDomainname(), skyltGrupp.getDomainname());
-
         //Create output base-dir
-        File targetDomainDirFile = targetDomainDir.toFile();
-        if (!targetDomainDirFile.exists()) {
-            logger.debug("Creating output base directory... [path={}]", targetDomainDir.toString());
-            targetDomainDirFile.mkdirs();
-        }
+        this.ensureDirExists(targetDomainDir);
 
         //Download and save images
         CrawlDataOutputHandler<Skylt> skyltOutputHandler = new SkyltOutputHandler(this.getDomainname(), skyltGrupp.getDomainname());

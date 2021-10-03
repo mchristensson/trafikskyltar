@@ -1,27 +1,21 @@
 package org.mac.swe.trafikskyltar.crawler;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class Foreskrift {
     private String code = "";
     private String label = "";
     private String beskrivning = "";
+
+    private static final Pattern detectCodePattern = Pattern.compile("^\\w\\d+\\s");
 
     public String getCode() {
         return code;
     }
 
     public void setCode(String code) {
-        this.code = code != null? code.trim() : code;
-        /*
-        if (this.code == null) {
-            //Splitta upp code och label
-            String[] data = rawData.split("\\.");
-            if (data.length > 1) {
-
-            }
-        }       else {
-               setLabel();
-        }
-            */
+        this.code = code != null ? code.trim() : code;
     }
 
     public String getLabel() {
@@ -29,17 +23,17 @@ public class Foreskrift {
     }
 
     public void setLabel(String label) {
-        String rawLabel = label != null? label.trim() : label;
-        if (this.label == null) {
-                String[] data = rawLabel.split("\\.");
-            if (data.length > 1) {
-                setCode(data[0]);
-                this.label = data[1].trim();
+        String rawLabel = label != null ? label.trim() : label;
+        if (this.label == null || this.label.isBlank()) {
+            Matcher m = detectCodePattern.matcher(rawLabel);
+            if (m.find()) {
+                setCode(rawLabel.substring(0, m.end()).trim());
+                this.label = rawLabel.substring(m.end()).trim();
             } else {
                 this.label = rawLabel;
             }
-        }   else {
-             this.label = rawLabel;
+        } else {
+            this.label = rawLabel;
         }
     }
 
@@ -48,6 +42,6 @@ public class Foreskrift {
     }
 
     public void setBeskrivning(String beskrivning) {
-        this.beskrivning = beskrivning != null? beskrivning.trim() : beskrivning;
+        this.beskrivning = beskrivning != null ? beskrivning.trim() : beskrivning;
     }
 }

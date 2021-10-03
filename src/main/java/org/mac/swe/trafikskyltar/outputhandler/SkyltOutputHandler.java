@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -40,7 +41,11 @@ public class SkyltOutputHandler implements CrawlDataOutputHandler<Skylt> {
 
         URL url = new URL(s.getSkyltBildHref());
         BufferedImage img = ImageIO.read(url);
+        Path targetDomainDir = Paths.get(contextname, getDomainname());
+        //Create output base-dir
+        this.ensureDirExists(targetDomainDir);
         File file = Paths.get(contextname, getDomainname(), filename).toFile();
+
         s.setDomainpath(getDomainname() + filename);
         logger.debug("Sparar fil.. [file={}, skylt={}]", file.getPath(), s);
         ImageIO.write(img, "png", file);

@@ -1,6 +1,8 @@
 package org.mac.swe.trafikskyltar.outputhandler;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 public interface CrawlDataOutputHandler<T> {
 
@@ -19,4 +21,10 @@ public interface CrawlDataOutputHandler<T> {
      */
     String getDomainname();
 
+    default void ensureDirExists(Path p) throws IOException {
+        File targetDomainDirFile = p.toFile();
+        if (!targetDomainDirFile.exists()) {
+            targetDomainDirFile.mkdirs();
+        }
+    }
 }
