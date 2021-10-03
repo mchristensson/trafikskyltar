@@ -1,12 +1,6 @@
 package org.mac.swe.trafikskyltar.crawler;
 
-public interface WebDriverSupportedCrawler {
+public interface WebDriverSupportedCrawler extends InterfaceSupportedCrawler {
 
-    void init();
 
-    void shutdown();
-
-    void crawl() throws Exception;
-
-    void writeOutput();
 }

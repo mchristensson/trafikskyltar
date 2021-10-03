@@ -10,7 +10,18 @@ public class Foreskrift {
     }
 
     public void setCode(String code) {
-        this.code = code;
+        this.code = code != null? code.trim() : code;
+        /*
+        if (this.code == null) {
+            //Splitta upp code och label
+            String[] data = rawData.split("\\.");
+            if (data.length > 1) {
+
+            }
+        }       else {
+               setLabel();
+        }
+            */
     }
 
     public String getLabel() {
@@ -18,7 +29,18 @@ public class Foreskrift {
     }
 
     public void setLabel(String label) {
-        this.label = label;
+        String rawLabel = label != null? label.trim() : label;
+        if (this.label == null) {
+                String[] data = rawLabel.split("\\.");
+            if (data.length > 1) {
+                setCode(data[0]);
+                this.label = data[1].trim();
+            } else {
+                this.label = rawLabel;
+            }
+        }   else {
+             this.label = rawLabel;
+        }
     }
 
     public String getBeskrivning() {
@@ -26,6 +48,6 @@ public class Foreskrift {
     }
 
     public void setBeskrivning(String beskrivning) {
-        this.beskrivning = beskrivning;
+        this.beskrivning = beskrivning != null? beskrivning.trim() : beskrivning;
     }
 }
