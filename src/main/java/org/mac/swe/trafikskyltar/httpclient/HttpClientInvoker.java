@@ -1,4 +1,4 @@
-package org.mac.swe.trafikskyltar.crawler;
+package org.mac.swe.trafikskyltar.httpclient;
 
 import org.apache.hc.client5.http.ClientProtocolException;
 import org.apache.hc.client5.http.classic.methods.HttpGet;

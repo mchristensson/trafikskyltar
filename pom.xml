@@ -7,6 +7,16 @@
     <groupId>org.mac.swe</groupId>
     <artifactId>trafikskyltar</artifactId>
     <version>1.0</version>
+
+
+    <properties>
+        <maven.compiler.source>16</maven.compiler.source>
+        <maven.compiler.target>16</maven.compiler.target>
+        <log4j.version>2.14.1</log4j.version>
+        <slf4j.version>1.7.32</slf4j.version>
+        <exec.mainClass>org.mac.swe.trafikskyltar.App</exec.mainClass>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -17,15 +27,20 @@
                     <target>15</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>org.mac.swe.trafikskyltar.App</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
-
-    <properties>
-        <maven.compiler.source>16</maven.compiler.source>
-        <maven.compiler.target>16</maven.compiler.target>
-        <log4j.version>2.14.1</log4j.version>
-        <slf4j.version>1.7.32</slf4j.version>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -82,5 +97,7 @@
         </dependency>
 
     </dependencies>
+
+
 
 </project>

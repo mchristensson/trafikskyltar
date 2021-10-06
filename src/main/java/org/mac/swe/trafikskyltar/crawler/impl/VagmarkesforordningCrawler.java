@@ -1,8 +1,12 @@
-package org.mac.swe.trafikskyltar.crawler;
+package org.mac.swe.trafikskyltar.crawler.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.text.StringEscapeUtils;
+import org.mac.swe.trafikskyltar.model.LagtextStycke;
+import org.mac.swe.trafikskyltar.model.vagmarke.VagmarkesforordningSkyltBeskrivning;
+import org.mac.swe.trafikskyltar.httpclient.HttpClientInvoker;
+import org.mac.swe.trafikskyltar.crawler.HttpClientSupportedCrawler;
+import org.mac.swe.trafikskyltar.model.common.LagtextSektion;
+import org.mac.swe.trafikskyltar.outputhandler.LagtextSektionOutputHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -18,8 +22,6 @@ import javax.xml.xpath.XPathFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -31,7 +33,7 @@ public class VagmarkesforordningCrawler implements HttpClientSupportedCrawler {
     private static final Logger logger = LoggerFactory.getLogger(TrafikskylteCrawler.class);
 
     private final String basUrl = "https://rkrattsbaser.gov.se/sfst?bet=2007:90";
-    private List<Sektion> paragrafer;
+    private List<LagtextSektion> paragrafer;
     private HttpClientInvoker httpClientInvoker;
 
     @Override
@@ -60,11 +62,9 @@ public class VagmarkesforordningCrawler implements HttpClientSupportedCrawler {
     @Override
     public void writeOutput() {
         if (this.paragrafer != null) {
+            LagtextSektionOutputHandler outputHandler = new LagtextSektionOutputHandler("./target/vagmarkesforordning");
             try {
-                logger.info("Saving entity data as JSON...");
-                Path path = Paths.get("./target/data", "paragrafer.json");
-                ObjectMapper objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-                objectMapper.writeValue(path.toFile(), this.paragrafer);
+                outputHandler.writeOutput(this.paragrafer);
             } catch (Exception e) {
                 logger.error("Unable to write output of object", e);
             }
@@ -105,7 +105,7 @@ public class VagmarkesforordningCrawler implements HttpClientSupportedCrawler {
         }
     };
 
-    private List<Sektion> hittaStycke() throws Exception {
+    private List<LagtextSektion> hittaStycke() throws Exception {
         Thread.sleep(300);
         //WebElement element = this.webDriver.findElement(By.xpath("/html/body/div/div[3]/div/div[2]/div/div[2]/div[2]/div[8]/div"));
         Node element = this.httpClientInvoker.get(basUrl, this.nodeResolver);
@@ -127,27 +127,27 @@ public class VagmarkesforordningCrawler implements HttpClientSupportedCrawler {
     private final Predicate<String> isAnyFirstFiveSections = s -> s.substring(0, 2).matches("[1234]\\s");
 
 
-    private Sektion skapaSektion(String s) {
-        Sektion sektion = new Sektion();
+    private LagtextSektion skapaSektion(String s) {
+        LagtextSektion lagtextSektion = new LagtextSektion();
         try {
             int i = s.indexOf('\n');
             String[] labelParts = s.substring(0, i).split("§");
-            sektion.setCode(labelParts[0].trim());
-            sektion.setLabel(labelParts[1].trim());
+            lagtextSektion.setCode(labelParts[0].trim());
+            lagtextSektion.setUnderrubrik(labelParts[1].trim());
 
             //Föreskrifter
-            sektion.setForeskriftList(skapaForeskrifter(s.substring(i)));
+            lagtextSektion.setLagtextStyckeList(skapaForeskrifter(s.substring(i)));
         } catch (Exception e) {
             logger.error("Kunde inte bearbeta sektion", e);
         }
-        return sektion;
+        return lagtextSektion;
     }
 
-    private List<Foreskrift> skapaForeskrifter(String text) {
-        List<Foreskrift> foreskriftList = new ArrayList<>();
+    private List<LagtextStycke> skapaForeskrifter(String text) {
+        List<LagtextStycke> vagmarkesforordningSkyltBeskrivningList = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new StringReader(text))) {
             String line = reader.readLine();
-            Foreskrift current = new Foreskrift();
+            VagmarkesforordningSkyltBeskrivning current = new VagmarkesforordningSkyltBeskrivning();
             while (line != null) {
                 line = reader.readLine();
                 if (line == null) {
@@ -158,8 +158,8 @@ public class VagmarkesforordningCrawler implements HttpClientSupportedCrawler {
                     continue;
                 } else if (!line.substring(0, 1).isBlank()) {
                     if (line.matches("\\w\\d*\\s.*")) {
-                        foreskriftList.add(current);
-                        current = new Foreskrift();
+                        vagmarkesforordningSkyltBeskrivningList.add(current);
+                        current = new VagmarkesforordningSkyltBeskrivning();
                     }
 
                 }
@@ -178,15 +178,15 @@ public class VagmarkesforordningCrawler implements HttpClientSupportedCrawler {
                     a = line;
                     b = null;
                 }
-                current.setLabel(current.getLabel().concat(" " + a));
+                current.setUnderrubrik(current.getUnderrubrik().concat(" " + a));
                 if (b != null) {
-                    current.setBeskrivning(current.getBeskrivning().concat(" " + b));
+                    current.setText(current.getText().concat(" " + b));
                 }
             }
         } catch (IOException exc) {
             logger.error("Kunde inte tolka data", exc);
         }
-        return foreskriftList;
+        return vagmarkesforordningSkyltBeskrivningList;
     }
 
     /**

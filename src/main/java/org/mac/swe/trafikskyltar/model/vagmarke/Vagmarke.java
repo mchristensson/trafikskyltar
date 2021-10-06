@@ -1,9 +1,9 @@
-package org.mac.swe.trafikskyltar.model;
+package org.mac.swe.trafikskyltar.model.vagmarke;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Skylt {
+public class Vagmarke {
 
     private String href;
     private String label;
@@ -11,14 +11,14 @@ public class Skylt {
     private String skyltBildHref;
     private String domainpath;
 
-    public List<Skylt> skyltAlternativa = new ArrayList<>();
+    public List<Vagmarke> vagmarkeAlternativa = new ArrayList<>();
 
-    public void addSkyltAlternativa(Skylt href) {
-        skyltAlternativa.add(href);
+    public void addSkyltAlternativa(Vagmarke href) {
+        vagmarkeAlternativa.add(href);
     }
 
-    public List<Skylt> getSkyltAlternativa() {
-        return this.skyltAlternativa;
+    public List<Vagmarke> getSkyltAlternativa() {
+        return this.vagmarkeAlternativa;
     }
 
     public void setHref(String href) {
@@ -60,7 +60,7 @@ public class Skylt {
                 ", label='" + label + '\'' +
                 ", beskrivning='" + beskrivning + '\'' +
                 ", skyltBildHref='" + skyltBildHref + '\'' +
-                ", skyltAlternativa=" + skyltAlternativa +
+                ", skyltAlternativa=" + vagmarkeAlternativa +
                 '}';
     }
 

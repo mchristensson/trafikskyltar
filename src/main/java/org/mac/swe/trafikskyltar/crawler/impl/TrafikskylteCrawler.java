@@ -1,10 +1,11 @@
-package org.mac.swe.trafikskyltar.crawler;
+package org.mac.swe.trafikskyltar.crawler.impl;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
-import org.mac.swe.trafikskyltar.model.Skylt;
-import org.mac.swe.trafikskyltar.model.SkyltGrupp;
+import org.mac.swe.trafikskyltar.crawler.WebDriverSupportedCrawler;
+import org.mac.swe.trafikskyltar.model.vagmarke.Vagmarke;
+import org.mac.swe.trafikskyltar.model.vagmarke.VagmarkesGrupp;
 import org.mac.swe.trafikskyltar.outputhandler.CrawlDataOutputHandler;
-import org.mac.swe.trafikskyltar.outputhandler.SkyltGruppOutputHandler;
+import org.mac.swe.trafikskyltar.outputhandler.VagmarkesGruppImageOutputHandler;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
@@ -26,7 +27,7 @@ public class TrafikskylteCrawler implements WebDriverSupportedCrawler {
 
     private WebDriver webDriver;
     private final String basUrl = "https://www.transportstyrelsen.se/sv/vagtrafik/Vagmarken";
-    private List<SkyltGrupp> skyltgrupper;
+    private List<VagmarkesGrupp> skyltgrupper;
 
     private final Function<String, String> domainResolver = url -> {
         String result = url.substring(basUrl.length());
@@ -60,10 +61,10 @@ public class TrafikskylteCrawler implements WebDriverSupportedCrawler {
 
     @Override
     public void writeOutput() {
-        CrawlDataOutputHandler<SkyltGrupp> outputHandler = new SkyltGruppOutputHandler("./target/data");
+        CrawlDataOutputHandler<VagmarkesGrupp> outputHandler = new VagmarkesGruppImageOutputHandler("./target/vagmarken");
         if (this.skyltgrupper != null) {
             try {
-                for (SkyltGrupp s : this.skyltgrupper) {
+                for (VagmarkesGrupp s : this.skyltgrupper) {
                     outputHandler.writeOutput(s);
                 }
             } catch (Exception e) {
@@ -77,7 +78,7 @@ public class TrafikskylteCrawler implements WebDriverSupportedCrawler {
         logger.info("Requesting base web-page...");
         this.webDriver.get(basUrl);
 
-        List<SkyltGrupp> skyltgrupper = hittaSkyltgrupper(1);
+        List<VagmarkesGrupp> skyltgrupper = hittaSkyltgrupper(0);
         logger.info("Hittar skyltar i grupp...");
         skyltgrupper.forEach(this::hittaSkyltar);
         logger.info("Lägger till data om skyltarna i respektive grupp...");
@@ -91,16 +92,16 @@ public class TrafikskylteCrawler implements WebDriverSupportedCrawler {
     /**
      * Hämtar alternativa data om skyltar
      *
-     * @param skylt Skylt
+     * @param vagmarke Skylt
      */
-    private void hittaSkyltAlternativaData(Skylt skylt) {
+    private void hittaSkyltAlternativaData(Vagmarke vagmarke) {
         try {
             Thread.sleep(300);
-            logger.trace("Requesting web-page... [url={}]", skylt.getHref());
-            this.webDriver.get(skylt.getHref());
+            logger.trace("Requesting web-page... [url={}]", vagmarke.getHref());
+            this.webDriver.get(vagmarke.getHref());
             Thread.sleep(150);
-            if (!skylt.getSkyltAlternativa().isEmpty()) {
-                skylt.getSkyltAlternativa().forEach(s -> hittaSkyltData(s, false));
+            if (!vagmarke.getSkyltAlternativa().isEmpty()) {
+                vagmarke.getSkyltAlternativa().forEach(s -> hittaSkyltData(s, false));
             }
         } catch (Exception e) {
             logger.error("Kunde inte bearbeta alternativa skyltar", e);
@@ -110,32 +111,32 @@ public class TrafikskylteCrawler implements WebDriverSupportedCrawler {
     /**
      * Hämtar data om skyltar
      *
-     * @param skylt            Skylt
+     * @param vagmarke            Skylt
      * @param hittaAlternativa om altarnativ data ska hämtas eller inte
      */
-    private void hittaSkyltData(Skylt skylt, boolean hittaAlternativa) {
+    private void hittaSkyltData(Vagmarke vagmarke, boolean hittaAlternativa) {
         SkyltCrawler skyltCrawler = new SkyltCrawler();
         try {
             Thread.sleep(300);
-            logger.trace("Requesting web-page... [url={}]", skylt.getHref());
-            this.webDriver.get(skylt.getHref());
+            logger.trace("Requesting web-page... [url={}]", vagmarke.getHref());
+            this.webDriver.get(vagmarke.getHref());
             Thread.sleep(150);
-            skyltCrawler.hittaSkylt(webDriver, skylt, hittaAlternativa);
+            skyltCrawler.hittaSkylt(webDriver, vagmarke, hittaAlternativa);
         } catch (Exception e) {
             logger.error("Kunde inte bearbeta skylt", e);
         }
     }
 
-    private void hittaSkyltar(SkyltGrupp skyltGrupp) {
+    private void hittaSkyltar(VagmarkesGrupp vagmarkesGrupp) {
         SkyltCrawler skyltCrawler = new SkyltCrawler();
         try {
             Thread.sleep(300);
-            logger.trace("Requesting web-page... [url={}]", skyltGrupp.getHref());
-            this.webDriver.get(skyltGrupp.getHref());
+            logger.trace("Requesting web-page... [url={}]", vagmarkesGrupp.getHref());
+            this.webDriver.get(vagmarkesGrupp.getHref());
             Thread.sleep(150);
-            skyltCrawler.hittaSkyltar(webDriver, skyltGrupp);
+            skyltCrawler.hittaSkyltar(webDriver, vagmarkesGrupp);
         } catch (Exception e) {
-            logger.error("Kunde inte hämta de skyltar som ingår i gruppen [grupp={}]", skyltGrupp, e);
+            logger.error("Kunde inte hämta de skyltar som ingår i gruppen [grupp={}]", vagmarkesGrupp, e);
         }
     }
 
@@ -147,8 +148,8 @@ public class TrafikskylteCrawler implements WebDriverSupportedCrawler {
      * @return Lista med skyltgrupper
      * @throws Exception Om listan som innehåller de skyltgrupper vi letar efter inte kunde hittas
      */
-    private List<SkyltGrupp> hittaSkyltgrupper(int limit) throws Exception {
-        List<SkyltGrupp> skyltgrupper = new ArrayList<>();
+    private List<VagmarkesGrupp> hittaSkyltgrupper(int limit) throws Exception {
+        List<VagmarkesGrupp> skyltgrupper = new ArrayList<>();
         WebElement vagmarkesGruppMain = webDriver.findElement(By.xpath("//*[@id=\"content-primary\"]/main"));
         WebElement vagmarkesGruppMainRubrik = vagmarkesGruppMain.findElement(By.tagName("h1"));
         logger.debug("Kontrollerar gruppnamn... [namn={}]", vagmarkesGruppMainRubrik.getText());
@@ -183,11 +184,11 @@ public class TrafikskylteCrawler implements WebDriverSupportedCrawler {
             String relativeHref = signLink.getAttribute("href");
             WebElement signText = signLink.findElement(By.xpath("span"));
             String label = (signText.getText().replaceAll("\\n", " "));
-            SkyltGrupp skyltGrupp = new SkyltGrupp();
-            skyltGrupp.setHref(relativeHref);
-            skyltGrupp.setDomainname(domainResolver.apply(relativeHref));
-            skyltGrupp.setLabel(label);
-            skyltgrupper.add(skyltGrupp);
+            VagmarkesGrupp vagmarkesGrupp = new VagmarkesGrupp();
+            vagmarkesGrupp.setHref(relativeHref);
+            vagmarkesGrupp.setDomainname(domainResolver.apply(relativeHref));
+            vagmarkesGrupp.setUnderrubrik(label);
+            skyltgrupper.add(vagmarkesGrupp);
             if (signText.getText().contains("Y.")) {
                 break;
             }

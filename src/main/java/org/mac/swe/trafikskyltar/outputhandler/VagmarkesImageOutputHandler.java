@@ -1,6 +1,6 @@
 package org.mac.swe.trafikskyltar.outputhandler;
 
-import org.mac.swe.trafikskyltar.model.Skylt;
+import org.mac.swe.trafikskyltar.model.vagmarke.Vagmarke;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,19 +15,19 @@ import java.nio.file.Paths;
 /**
  * Downloads and saves image
  */
-public class SkyltOutputHandler implements CrawlDataOutputHandler<Skylt> {
+public class VagmarkesImageOutputHandler implements CrawlDataOutputHandler<Vagmarke> {
 
-    private static final Logger logger = LoggerFactory.getLogger(SkyltOutputHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(VagmarkesImageOutputHandler.class);
     private final String domainname;
     private final String contextname;
 
-    public SkyltOutputHandler(String contextname, String domainname) {
+    public VagmarkesImageOutputHandler(String contextname, String domainname) {
         this.contextname = contextname;
         this.domainname = domainname;
     }
 
     @Override
-    public void writeOutput(Skylt s) throws IOException {
+    public void writeOutput(Vagmarke s) throws IOException {
         String href = s.getSkyltBildHref();
         if (href == null) {
             logger.warn("Image href not present on entry [entry={}]", s);
